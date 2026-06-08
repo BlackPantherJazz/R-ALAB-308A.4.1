@@ -1,7 +1,6 @@
 import * as Carousel from "./Carousel.js";
 import { API_KEY } from "./keys.js";
 
-
 // import axios from "axios";
 
 // The breed selection input element.
@@ -16,8 +15,8 @@ const getFavouritesBtn = document.getElementById("getFavouritesBtn");
 async function initialLoad() {
   const response = await fetch("https://api.thecatapi.com/v1/breeds", {
     headers: {
-      "x-api-key": API_KEY
-    }
+      "x-api-key": API_KEY,
+    },
   });
   const breeds = await response.json();
 
@@ -27,7 +26,57 @@ async function initialLoad() {
     option.textContent = breed.name;
     breedSelect.appendChild(option);
   });
+
+  handleBreedSelect();
 }
+
+async function handleBreedSelect() {
+  const breedId = breedSelect.value;
+
+  const response = await fetch(
+    `https://api.thecatapi.com/v1/images/search?limit=10&breed_ids=${breedId}`,
+    {
+      headers: {
+        "x-api-key": API_KEY,
+      },
+    }
+  );
+  const images = await response.json();
+
+  Carousel.clear();
+
+  images.forEach((img) => {
+    const altText =
+      img.breeds && img.breeds.length > 0 ? img.breeds[0].name : "Cat image";
+    const element = Carousel.createCarouselItem(img.url, altText, img.id);
+    Carousel.appendCarousel(element);
+  });
+
+  Carousel.start();
+
+  infoDump.innerHTML = "";
+
+  if (images.length > 0 && images[0].breeds && images[0].breeds.length > 0) {
+    const breed = images[0].breeds[0];
+
+    infoDump.innerHTML = `
+      <h2>${breed.name}</h2>
+      <p><strong>Description:</strong> ${breed.description || "No description available."}</p>
+      <p><strong>Temperament:</strong> ${breed.temperament || "N/A"}</p>
+      <p><strong>Origin:</strong> ${breed.origin || "N/A"}</p>
+      <p><strong>Life Span:</strong> ${breed.life_span || "N/A"} years</p>
+      <p><strong>Wikipedia:</strong> ${
+        breed.wikipedia_url
+          ? `<a href="${breed.wikipedia_url}" target="_blank">Learn More</a>`
+          : "N/A"
+      }</p>
+    `;
+  } else {
+    infoDump.innerHTML = "<p>No breed information available.</p>";
+  }
+}
+
+breedSelect.addEventListener("change", handleBreedSelect);
 
 initialLoad();
 
